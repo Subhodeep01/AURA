@@ -1,18 +1,3 @@
-"""
-Dawid-Skene Algorithm for Multi-Annotator Label Aggregation
-
-This implementation estimates the true labels for items that have been
-labeled by multiple annotators (classifiers) with varying levels of expertise.
-
-The algorithm uses Expectation-Maximization (EM) to jointly estimate:
-1. The true label for each item
-2. The error rate (confusion matrix) for each annotator
-
-References:
-- Dawid, A. P., & Skene, A. M. (1979). Maximum likelihood estimation of observer
-  error-rates using the EM algorithm. Journal of the Royal Statistical Society, 28(1), 20-28.
-"""
-
 import numpy as np
 from typing import Dict, List, Tuple
 import csv
@@ -20,8 +5,6 @@ import csv
 
 class DawidSkene:
     """
-    Dawid-Skene model for aggregating labels from multiple annotators.
-    
     Attributes:
         num_annotators: Number of annotators (classifiers)
         num_classes: Number of possible classes
@@ -34,8 +17,6 @@ class DawidSkene:
     
     def __init__(self, max_iterations: int = 100, tolerance: float = 1e-6):
         """
-        Initialize the Dawid-Skene model.
-        
         Args:
             max_iterations: Maximum number of EM iterations
             tolerance: Convergence threshold (change in log-likelihood)
@@ -54,9 +35,7 @@ class DawidSkene:
             annotations: Dict[str, Dict[str, str]], 
             classes: List[str],
             annotator_names: List[str]) -> 'DawidSkene':
-        """
-        Fit the Dawid-Skene model using EM algorithm.
-        
+        """     
         Args:
             annotations: Dict mapping item_id -> {annotator_name: label}
                         Example: {"video1.mp4": {"Gemini": "walking", "GPT": "running"}}
@@ -117,12 +96,8 @@ class DawidSkene:
     
     def _initialize_parameters(self, response: np.ndarray, num_items: int):
         """
-        Initialize model parameters.
-        
-        Strategy:
         - Class priors: Uniform distribution
         - Error matrices: Start with majority voting results + small random noise
-        - Item classes: Based on majority voting
         """
         # Initialize class priors uniformly
         self.class_priors = np.ones(self.num_classes) / self.num_classes
@@ -159,8 +134,6 @@ class DawidSkene:
     
     def _e_step(self, response: np.ndarray, num_items: int):
         """
-        E-step: Estimate posterior probability of true class for each item.
-        
         For each item i, compute:
         T[i, k] = P(true class is k | observed annotations)
         """
@@ -186,8 +159,6 @@ class DawidSkene:
     
     def _m_step(self, response: np.ndarray, num_items: int):
         """
-        M-step: Update parameters given current item class estimates.
-        
         Update:
         1. Class priors π[k] = average probability of class k across all items
         2. Error matrices θ[j, k, l] = P(annotator j gives label l | true class is k)
@@ -220,8 +191,6 @@ class DawidSkene:
     def _compute_log_likelihood(self, response: np.ndarray, num_items: int) -> float:
         """
         Compute log-likelihood of the data given current parameters.
-        
-        Used for monitoring convergence.
         """
         log_likelihood = 0.0
         
@@ -248,8 +217,6 @@ class DawidSkene:
     
     def predict(self, return_probabilities: bool = False) -> Dict[str, any]:
         """
-        Get the predicted class for each item.
-        
         Args:
             return_probabilities: If True, return probability distributions
             
@@ -282,9 +249,6 @@ class DawidSkene:
         
         Accuracy = average probability of correct classification
         = average of diagonal elements of error matrix
-        
-        Returns:
-            Dictionary mapping annotator_name -> accuracy
         """
         accuracies = {}
         
@@ -301,8 +265,6 @@ class DawidSkene:
     
     def get_confusion_matrix(self, annotator_name: str) -> np.ndarray:
         """
-        Get the confusion matrix for a specific annotator.
-        
         Args:
             annotator_name: Name of the annotator
             
@@ -319,10 +281,6 @@ class DawidSkene:
     def save_predictions(self, output_file: str, include_probabilities: bool = True):
         """
         Save predictions to a CSV file.
-        
-        Args:
-            output_file: Path to output CSV file
-            include_probabilities: Whether to include class probabilities
         """
         predictions = self.predict(return_probabilities=include_probabilities)
         
@@ -372,8 +330,6 @@ def aggregate_annotations(
     tolerance: float = 1e-6
 ) -> Tuple[Dict[str, str], Dict[str, float], DawidSkene]:
     """
-    Convenience function to aggregate annotations using Dawid-Skene.
-    
     Args:
         annotations: Dict mapping item_id -> {annotator_name: label}
         classes: List of all possible class labels
