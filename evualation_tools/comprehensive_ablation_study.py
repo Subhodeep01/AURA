@@ -4,8 +4,8 @@ Comprehensive Ablation Study: Enhanced Analysis with Timing and Classifier Accur
 This script performs an enhanced ablation study with:
 1. Remove top-1, top-2, top-3, top-4 classifiers
 2. Gemini with bottom-1, bottom-2, bottom-3 classifiers
-3. Performance timing for both Ensemble and Dawid-Skene
-4. Classifier accuracy estimates from Dawid-Skene for each configuration
+3. Performance timing for both Ensemble and AURA
+4. Classifier accuracy estimates from AURA for each configuration
 """
 
 import pandas as pd
@@ -15,7 +15,7 @@ import os
 import time
 from typing import Dict, List, Tuple
 from collections import Counter
-from dawid_skene import AemL
+from aeml import AemL
 
 
 def ensemble_predict(predictions: Dict[str, pd.DataFrame], 
@@ -69,12 +69,12 @@ def ensemble_predict(predictions: Dict[str, pd.DataFrame],
     return merged['true_label'].values, merged['ensemble_pred'].values, execution_time
 
 
-def dawid_skene_predict(predictions: Dict[str, pd.DataFrame],
+def aura_predict(predictions: Dict[str, pd.DataFrame],
                        classifier_subset: List[str],
                        ground_truth: pd.DataFrame,
                        all_classes: List[str]) -> Tuple[np.ndarray, np.ndarray, float, Dict[str, float]]:
     """
-    Perform Dawid-Skene aggregation on a subset of classifiers.
+    Perform AURA aggregation on a subset of classifiers.
     
     Args:
         predictions: Dictionary of all predictions
@@ -93,7 +93,7 @@ def dawid_skene_predict(predictions: Dict[str, pd.DataFrame],
         if clf_name in predictions:
             merged = merged.merge(predictions[clf_name], on='video_name', how='inner')
     
-    # Prepare annotations in Dawid-Skene format
+    # Prepare annotations in AURA format
     annotations = {}
     for idx, row in merged.iterrows():
         video_name = row['video_name']
@@ -102,7 +102,7 @@ def dawid_skene_predict(predictions: Dict[str, pd.DataFrame],
             if clf_name in row.index and pd.notna(row[clf_name]):
                 annotations[video_name][clf_name] = row[clf_name]
     
-    # Fit Dawid-Skene model
+    # Fit AURA model
     model = AemL(max_iterations=100, tolerance=1e-6)
     model.fit(annotations, all_classes, classifier_subset)
     
@@ -257,9 +257,9 @@ def run_comprehensive_ablation_study():
         )
         print(f"   ✓ Completed in {ensemble_time:.2f}s")
         
-        # Dawid-Skene prediction
-        print("🔹 Running Dawid-Skene aggregation...")
-        y_true_ds, y_pred_ds, ds_time, classifier_accuracies = dawid_skene_predict(
+        # AURA prediction
+        print("🔹 Running AURA aggregation...")
+        y_true_ds, y_pred_ds, ds_time, classifier_accuracies = aura_predict(
             predictions, classifier_subset, ground_truth, all_classes
         )
         print(f"   ✓ Completed in {ds_time:.2f}s")
@@ -267,8 +267,8 @@ def run_comprehensive_ablation_study():
         # Calculate metrics for Ensemble
         ens_metrics = calculate_metrics(y_true_ens, y_pred_ens, "Ensemble")
         
-        # Calculate metrics for Dawid-Skene
-        ds_metrics = calculate_metrics(y_true_ds, y_pred_ds, "Dawid-Skene")
+        # Calculate metrics for AURA
+        ds_metrics = calculate_metrics(y_true_ds, y_pred_ds, "AURA")
         
         # Store results
         result = {
@@ -287,15 +287,15 @@ def run_comprehensive_ablation_study():
             'Ensemble_F1_Weighted': ens_metrics['F1 (Weighted)'],
             'Ensemble_Time_Seconds': ensemble_time,
             
-            # Dawid-Skene metrics
-            'DS_Accuracy': ds_metrics['Accuracy'],
-            'DS_Precision_Macro': ds_metrics['Precision (Macro)'],
-            'DS_Precision_Weighted': ds_metrics['Precision (Weighted)'],
-            'DS_Recall_Macro': ds_metrics['Recall (Macro)'],
-            'DS_Recall_Weighted': ds_metrics['Recall (Weighted)'],
-            'DS_F1_Macro': ds_metrics['F1 (Macro)'],
-            'DS_F1_Weighted': ds_metrics['F1 (Weighted)'],
-            'DS_Time_Seconds': ds_time,
+            # AURA metrics
+            'AURA_Accuracy': ds_metrics['Accuracy'],
+            'AURA_Precision_Macro': ds_metrics['Precision (Macro)'],
+            'AURA_Precision_Weighted': ds_metrics['Precision (Weighted)'],
+            'AURA_Recall_Macro': ds_metrics['Recall (Macro)'],
+            'AURA_Recall_Weighted': ds_metrics['Recall (Weighted)'],
+            'AURA_F1_Macro': ds_metrics['F1 (Macro)'],
+            'AURA_F1_Weighted': ds_metrics['F1 (Weighted)'],
+            'AURA_Time_Seconds': ds_time,
             
             # Differences
             'Accuracy_Difference': ds_metrics['Accuracy'] - ens_metrics['Accuracy'],
@@ -308,17 +308,17 @@ def run_comprehensive_ablation_study():
         performance_data.append({
             'Configuration': config_name,
             'Ensemble_Time_Seconds': ensemble_time,
-            'DawidSkene_Time_Seconds': ds_time,
+            'AURA_Time_Seconds': ds_time,
             'Time_Difference_Seconds': ds_time - ensemble_time
         })
         
-        # Save classifier accuracies for Dawid-Skene
+        # Save classifier accuracies for AURA
         accuracies_df = pd.DataFrame([
             {'Classifier': clf, 'Estimated_Accuracy': acc}
             for clf, acc in classifier_accuracies.items()
         ])
         accuracies_df = accuracies_df.sort_values('Estimated_Accuracy', ascending=False)
-        accuracies_file = f'ablation_results/classifier_accuracies/{config_name}_dawid_skene_accuracies.csv'
+        accuracies_file = f'ablation_results/classifier_accuracies/{config_name}_AURA_accuracies.csv'
         accuracies_df.to_csv(accuracies_file, index=False, float_format='%.6f')
         
         # Print summary
@@ -328,7 +328,7 @@ def run_comprehensive_ablation_study():
         print(f"      F1 Macro:  {ens_metrics['F1 (Macro)']:.4f} ({ens_metrics['F1 (Macro)']*100:.2f}%)")
         print(f"      Time:      {ensemble_time:.2f}s")
         
-        print(f"\n   Dawid-Skene:")
+        print(f"\n   AURA:")
         print(f"      Accuracy:  {ds_metrics['Accuracy']:.4f} ({ds_metrics['Accuracy']*100:.2f}%)")
         print(f"      F1 Macro:  {ds_metrics['F1 (Macro)']:.4f} ({ds_metrics['F1 (Macro)']*100:.2f}%)")
         print(f"      Time:      {ds_time:.2f}s")
@@ -343,13 +343,13 @@ def run_comprehensive_ablation_study():
         print(f"      Time Δ:      {time_diff:+.2f}s")
         
         if acc_diff > 0:
-            print(f"      → Dawid-Skene wins by {acc_diff*100:.2f}%")
+            print(f"      → AURA wins by {acc_diff*100:.2f}%")
         elif acc_diff < 0:
             print(f"      → Ensemble wins by {abs(acc_diff)*100:.2f}%")
         else:
             print(f"      → Tie")
         
-        print(f"\n   Classifier Accuracies (Dawid-Skene estimates):")
+        print(f"\n   Classifier Accuracies (AURA estimates):")
         for clf, acc in sorted(classifier_accuracies.items(), key=lambda x: x[1], reverse=True):
             print(f"      {clf:15s}: {acc:.4f} ({acc*100:.2f}%)")
     
@@ -375,15 +375,15 @@ def run_comprehensive_ablation_study():
     
     # Best configurations
     best_ens_idx = results_df['Ensemble_Accuracy'].idxmax()
-    best_ds_idx = results_df['DS_Accuracy'].idxmax()
+    best_ds_idx = results_df['AURA_Accuracy'].idxmax()
     
     print(f"\n   Best Ensemble Configuration:")
     print(f"      {results_df.iloc[best_ens_idx]['Configuration']}")
     print(f"      Accuracy: {results_df.iloc[best_ens_idx]['Ensemble_Accuracy']:.4f} ({results_df.iloc[best_ens_idx]['Ensemble_Accuracy']*100:.2f}%)")
     
-    print(f"\n   Best Dawid-Skene Configuration:")
+    print(f"\n   Best AURA Configuration:")
     print(f"      {results_df.iloc[best_ds_idx]['Configuration']}")
-    print(f"      Accuracy: {results_df.iloc[best_ds_idx]['DS_Accuracy']:.4f} ({results_df.iloc[best_ds_idx]['DS_Accuracy']*100:.2f}%)")
+    print(f"      Accuracy: {results_df.iloc[best_ds_idx]['AURA_Accuracy']:.4f} ({results_df.iloc[best_ds_idx]['AURA_Accuracy']*100:.2f}%)")
     
     # Win counts
     ds_wins = (results_df['Accuracy_Difference'] > 0).sum()
@@ -391,17 +391,17 @@ def run_comprehensive_ablation_study():
     ties = (results_df['Accuracy_Difference'] == 0).sum()
     
     print(f"\n   Head-to-Head (Accuracy):")
-    print(f"      Dawid-Skene wins: {ds_wins}/{len(test_configs)}")
+    print(f"      AURA wins: {ds_wins}/{len(test_configs)}")
     print(f"      Ensemble wins:    {ens_wins}/{len(test_configs)}")
     print(f"      Ties:             {ties}/{len(test_configs)}")
     
     # Average timing
     avg_ens_time = results_df['Ensemble_Time_Seconds'].mean()
-    avg_ds_time = results_df['DS_Time_Seconds'].mean()
+    avg_ds_time = results_df['AURA_Time_Seconds'].mean()
     
     print(f"\n   Average Execution Time:")
     print(f"      Ensemble:     {avg_ens_time:.2f}s")
-    print(f"      Dawid-Skene:  {avg_ds_time:.2f}s")
+    print(f"      AURA:  {avg_ds_time:.2f}s")
     print(f"      Difference:   {avg_ds_time - avg_ens_time:+.2f}s")
     
     print("\n" + "=" * 100)

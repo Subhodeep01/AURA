@@ -1,4 +1,4 @@
-Configuration,Ensemble_Time_Seconds,DawidSkene_Time_Seconds,Time_Difference_Seconds
-Gemini_Plus_Bottom1,0.05,277.50,277.45
-Gemini_Plus_Bottom2,0.07,684.71,684.64
-Gemini_Plus_Bottom3,0.08,410.97,410.90
+Configuration,Ensemble_Time_Seconds,AURA_Time_Seconds,Time_Difference_Seconds
+Gemini_Plus_Bottom1,0.01,41.74,41.73
+Gemini_Plus_Bottom2,0.02,64.66,64.64
+Gemini_Plus_Bottom3,0.02,86.05,86.03

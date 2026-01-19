@@ -10,7 +10,7 @@ import numpy as np
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import time
 
-from dawid_skene import AemL
+from aeml import AemL
 from dawid_skene_complement import DawidSkeneComplement
 
 

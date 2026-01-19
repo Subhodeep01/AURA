@@ -1,5 +1,5 @@
 Metric,Best Model,Score
-Accuracy,Ensemble,0.938000
-Precision Macro,Gemini,0.943048
-Recall Macro,Dawid-Skene,0.937365
-F1 Macro,Ensemble,0.928283
+Accuracy,AURA,0.938000
+Precision Macro,Ensemble,0.944973
+Recall Macro,AURA,0.937365
+F1 Macro,Gemini,0.928261

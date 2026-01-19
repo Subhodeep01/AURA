@@ -19,7 +19,7 @@ The 60 classes include: abseiling, applauding, applying cream, baby waking up, b
 ```
 AURA/
 ├── video_classification_graph.py     # Main LangGraph orchestrator
-├── dawid_skene.py                     # EM algorithm
+├── aeml.py                     # EM algorithm
 ├── metadata.txt                       # Dataset metadata
 ├── .env                               # API keys (NOT in git)
 ├── classifiers/                       # Classifier modules
@@ -32,10 +32,10 @@ AURA/
 │   └── moondream_classifier.py
 ├── predictions/                       # Classifier outputs (CSV)
 ├── evaluation_results/                # Performance metrics
-├── dawid_skene_visualizations/       # Heatmaps, convergence plots
+├── aeml_vizs/       # Heatmaps, convergence plots
 ├── evualation_tools/                 # Visualization scripts
 │   ├── evaluation.py
-│   ├── dawid_skene_visualization.py
+│   ├── aeml_viz.py
 │   ├── visualize_classification_report.py
 │   └── visualize_confusion_matrix.py
 └── dataset_tools/                    # Dataset preparation scripts
@@ -50,14 +50,35 @@ git clone <repository-url>
 cd AURA
 ```
 
-### 2. Create Virtual Environment
+### 2. Download Dataset Files
+
+Download the sampled videos and labels from the dataset repository:
+
+1. **Download `sampled_videos/` folder** containing 1000 video files
+2. **Download `sampled_labels.csv`** containing ground truth labels
+3. Place both in the `AURA/` directory (project root)
+
+Your directory structure should look like:
+```
+AURA/
+├── sampled_videos/          # Downloaded video files
+│   ├── video_001.mp4
+│   ├── video_002.mp4
+│   └── ...
+├── sampled_labels.csv       # Downloaded ground truth labels
+├── video_classification_graph.py
+├── aeml.py
+└── ...
+```
+
+### 3. Create Virtual Environment
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\activate  # Windows PowerShell
 ```
 
-### 3. Install Dependencies
+### 4. Install Dependencies
 
 ```powershell
 # Core dependencies
@@ -81,7 +102,7 @@ pip install opencv-python              # Frame extraction
 pip install fiftyone                   # Dataset management
 ```
 
-### 4. Configure API Keys
+### 5. Configure API Keys
 
 Create a `.env` file in the project root:
 
@@ -121,7 +142,7 @@ python video_classification_graph.py
 
 ```powershell
 # Process specific video range (1-based indexing)
-python video_classification_graph.py --start 1 --end 100
+python video_classification_graph.py --start 1 --end 1000       #Recommended for reproducing results 
 
 # Disable cache and force API calls
 python video_classification_graph.py --no-cache
@@ -160,7 +181,7 @@ After running `video_classification_graph.py`, you'll get:
 ```
 predictions/
 ├── ensemble_predictions.csv          # Majority voting results
-├── dawid_skene_predictions.csv       # AEML results
+├── aura_predictions.csv       # AEML results
 ├── gemini_predictions.csv             # Individual classifier outputs
 ├── gpt-5-mini_predictions.csv
 ├── twelvelabs_predictions.csv
@@ -188,8 +209,8 @@ evaluation_results/
 ├── model_comparison.csv                      # Summary of all models
 ├── ensemble_classification_report.csv        # Per-class metrics
 ├── ensemble_confusion_matrix.csv
-├── dawid_skene_classification_report.csv
-├── dawid_skene_confusion_matrix.csv
+├── model_classification_report.csv
+├── model_confusion_matrix.csv
 └── ... (reports for all classifiers)
 ```
 
@@ -200,10 +221,10 @@ The algorithm tracks convergence and estimates annotator (classifier) quality. V
 #### 1. Generate Annotator Accuracy Heatmaps & Convergence Plots
 
 ```powershell
-python evualation_tools/dawid_skene_visualization.py
+python evualation_tools/aeml_viz.py
 ```
 
-**Outputs** (in `dawid_skene_visualizations/`):
+**Outputs** (in `aeml_vizs/`):
 - **Annotator Accuracy Heatmaps**: 7 confusion matrices (60×60), one per classifier
   - `gemini_accuracy_heatmap.png`
   - `gpt-5-mini_accuracy_heatmap.png`
@@ -234,11 +255,11 @@ python evualation_tools/visualize_classification_report.py
 This generates **per-class performance visualizations** from the classification report:
 
 **Outputs** (in `evaluation_results/visualizations/`):
-- `dawid_skene_per_class_metrics.png` - Bar chart of precision, recall, F1 for all 60 classes
-- `dawid_skene_f1_scores.png` - Color-coded F1-scores only
-- `dawid_skene_metrics_heatmap.png` - Heatmap of all metrics
-- `dawid_skene_support_vs_f1.png` - Scatter plot of support vs F1-score
-- `dawid_skene_summary_statistics.csv` - Overall summary
+- `AURA_per_class_metrics.png` - Bar chart of precision, recall, F1 for all 60 classes
+- `AURA_f1_scores.png` - Color-coded F1-scores only
+- `AURA_metrics_heatmap.png` - Heatmap of all metrics
+- `AURA_support_vs_f1.png` - Scatter plot of support vs F1-score
+- `AURA_summary_statistics.csv` - Overall summary
 
 **Note**: You can modify the script to visualize any classifier by changing:
 ```python
@@ -255,16 +276,26 @@ python evualation_tools/visualize_confusion_matrix.py
 This generates **confusion matrix visualizations** from the confusion matrix:
 
 **Outputs** (in `evaluation_results/visualizations/`):
-- `dawid_skene_confusion_matrix_heatmap.png` - Full 60×60 heatmap
-- `dawid_skene_per_class_accuracy.png` - Diagonal accuracy bar chart
-- `dawid_skene_top_confusions.png` - Most frequent misclassifications
-- `dawid_skene_normalized_confusion_matrix.png` - Row-normalized heatmap
+- `AURA_confusion_matrix_heatmap.png` - Full 60×60 heatmap
+- `AURA_per_class_accuracy.png` - Diagonal accuracy bar chart
+- `AURA_top_confusions.png` - Most frequent misclassifications
+- `AURA_normalized_confusion_matrix.png` - Row-normalized heatmap
 
 **Note**: To visualize other classifiers, modify:
 ```python
 input_file = 'evaluation_results/ensemble_confusion_matrix.csv'  # Change this
 method_name = 'Ensemble'  # Change this
 ```
+
+#### 3. Conduct Ablation Study
+
+```powershell
+python evualation_tools/ablation_study.py
+```
+
+**Outputs** (in `ablation_results`):
+- `ablation_study.csv` 
+
 
 ### Complete Workflow Example
 
@@ -276,7 +307,7 @@ python video_classification_graph.py --start 1 --end 1000
 python evualation_tools/evaluation.py
 
 # Step 3: Visualize convergence and annotator quality
-python evualation_tools/dawid_skene_visualization.py
+python evualation_tools/aeml_viz.py
 
 # Step 4: Visualize per-class metrics (precision, recall, F1)
 python evualation_tools/visualize_classification_report.py

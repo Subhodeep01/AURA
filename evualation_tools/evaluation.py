@@ -4,7 +4,7 @@ Evaluation Script for Video Classification Models
 This script calculates and compares performance metrics for:
 - Individual classifier models
 - Ensemble predictions (majority voting)
-- Dawid-Skene predictions
+- AURA predictions
 
 Metrics calculated: Accuracy, Precision, Recall, F1-Score, Confusion Matrix
 """
@@ -41,7 +41,7 @@ def load_predictions(filepath: str, model_name: str) -> pd.DataFrame:
     if 'predicted_class' not in df.columns and 'ensemble_prediction' in df.columns:
         df = df.rename(columns={'ensemble_prediction': 'predicted_class'})
     
-    # Handle Dawid-Skene format with dictionary strings
+    # Handle AURA format with dictionary strings
     if 'predicted_class' in df.columns:
         # Check if first entry is a dictionary string
         first_pred = str(df['predicted_class'].iloc[0])
@@ -260,17 +260,17 @@ def evaluate_all_models(ground_truth_file: str = 'classifiers/sampled_labels.csv
         print(f"  Accuracy: {metrics['accuracy']:.4f}")
         print(f"  F1 (macro): {metrics['f1_macro']:.4f}")
     
-    # Dawid-Skene predictions
+    # AURA predictions
     print(f"\n{'=' * 80}")
-    print("DAWID-SKENE")
+    print("AURA")
     print("=" * 80)
     
-    dawid_skene_file = 'dawid_skene_predictions.csv'
-    if os.path.exists(dawid_skene_file):
-        print(f"\nEvaluating: Dawid-Skene")
-        print(f"  File: {dawid_skene_file}")
+    aura_file = 'aura_predictions.csv'
+    if os.path.exists(aura_file):
+        print(f"\nEvaluating: AURA")
+        print(f"  File: {aura_file}")
         
-        preds = load_predictions(dawid_skene_file, 'Dawid-Skene')
+        preds = load_predictions(aura_file, 'AURA')
         merged = ground_truth.merge(preds, on='video_name', how='inner')
         
         print(f"  Evaluating {len(merged)} videos")
@@ -285,13 +285,13 @@ def evaluate_all_models(ground_truth_file: str = 'classifiers/sampled_labels.csv
             merged['true_label'].values,
             merged['predicted_class'].values,
             all_labels,
-            'dawid_skene',
+            'aura',
             output_dir
         )
         
-        result_row = {'Model': 'Dawid-Skene', **metrics}
+        result_row = {'Model': 'AURA', **metrics}
         results.append(result_row)
-        all_predictions['Dawid-Skene'] = merged
+        all_predictions['AURA'] = merged
         
         print(f"  Accuracy: {metrics['accuracy']:.4f}")
         print(f"  F1 (macro): {metrics['f1_macro']:.4f}")
@@ -419,8 +419,8 @@ def generate_summary_statistics(results_df: pd.DataFrame,
               f"Mean: {mean_acc:.4f}, Std: {std_acc:.4f}")
         print(f"  Accuracy Range: {max_acc - min_acc:.4f}")
         
-        # Check if ensemble/Dawid-Skene outperform individual models
-        individual_models = results_df[~results_df['Model'].isin(['Ensemble', 'Dawid-Skene'])]
+        # Check if ensemble/AURA outperform individual models
+        individual_models = results_df[~results_df['Model'].isin(['Ensemble', 'AURA'])]
         if len(individual_models) > 0:
             best_individual_acc = individual_models['accuracy'].max()
             
@@ -433,12 +433,12 @@ def generate_summary_statistics(results_df: pd.DataFrame,
                 print(f"    Best Individual: {best_individual_acc:.4f}")
                 print(f"    Improvement: {improvement:+.4f} ({improvement/best_individual_acc*100:+.2f}%)")
             
-            ds_row = results_df[results_df['Model'] == 'Dawid-Skene']
+            ds_row = results_df[results_df['Model'] == 'AURA']
             if len(ds_row) > 0:
                 ds_acc = ds_row['accuracy'].values[0]
                 improvement = ds_acc - best_individual_acc
-                print(f"\n  Dawid-Skene vs Best Individual:")
-                print(f"    Dawid-Skene: {ds_acc:.4f}")
+                print(f"\n  AURA vs Best Individual:")
+                print(f"    AURA: {ds_acc:.4f}")
                 print(f"    Best Individual: {best_individual_acc:.4f}")
                 print(f"    Improvement: {improvement:+.4f} ({improvement/best_individual_acc*100:+.2f}%)")
 

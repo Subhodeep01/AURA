@@ -27,7 +27,7 @@ def load_classification_report(filepath):
     return df_classes, df
 
 
-def plot_per_class_metrics(df_classes, output_dir, method_name='Dawid-Skene'):
+def plot_per_class_metrics(df_classes, output_dir, method_name='AURA'):
     """
     Create bar chart showing precision, recall, and F1-score for each class.
     """
@@ -84,7 +84,7 @@ def plot_per_class_metrics(df_classes, output_dir, method_name='Dawid-Skene'):
     plt.close()
 
 
-def plot_f1_score_only(df_classes, output_dir, method_name='Dawid-Skene'):
+def plot_f1_score_only(df_classes, output_dir, method_name='AURA'):
     """
     Create bar chart showing only F1-score with color coding.
     """
@@ -148,7 +148,7 @@ def plot_f1_score_only(df_classes, output_dir, method_name='Dawid-Skene'):
     plt.close()
 
 
-def plot_metrics_heatmap(df_classes, output_dir, method_name='Dawid-Skene'):
+def plot_metrics_heatmap(df_classes, output_dir, method_name='AURA'):
     """
     Create heatmap showing precision, recall, and F1-score for all classes.
     """
@@ -187,7 +187,7 @@ def plot_metrics_heatmap(df_classes, output_dir, method_name='Dawid-Skene'):
     plt.close()
 
 
-def plot_support_vs_f1(df_classes, output_dir, method_name='Dawid-Skene'):
+def plot_support_vs_f1(df_classes, output_dir, method_name='AURA'):
     """
     Scatter plot showing relationship between support (sample size) and F1-score.
     """
@@ -207,28 +207,28 @@ def plot_support_vs_f1(df_classes, output_dir, method_name='Dawid-Skene'):
             colors.append('#e74c3c')
     
     # Scatter plot
-    scatter = ax.scatter(support, f1_scores, c=colors, s=100, alpha=0.6, 
+    scatter = ax.scatter(support, f1_scores, c=colors, s=200, alpha=0.6, 
                         edgecolors='black', linewidth=1)
     
     # Add class labels for poor performers
-    for idx, (sup, f1, label) in enumerate(zip(support, f1_scores, df_classes.index)):
-        if f1 < 0.7:
-            ax.annotate(label, (sup, f1), fontsize=8, 
-                       xytext=(5, 5), textcoords='offset points',
-                       bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow', alpha=0.5))
+    # for idx, (sup, f1, label) in enumerate(zip(support, f1_scores, df_classes.index)):
+    #     if f1 < 0.7:
+    #         ax.annotate(label, (sup, f1), fontsize=18, 
+    #                    xytext=(10, 10), textcoords='offset points',
+    #                    bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow', alpha=0.5))
     
     # Add trend line
     z = np.polyfit(support, f1_scores, 1)
     p = np.poly1d(z)
-    ax.plot(support, p(support), "r--", alpha=0.5, linewidth=2, 
+    ax.plot(support, p(support), "r--", alpha=0.5, linewidth=4, 
             label=f'Trend: y={z[0]:.4f}x+{z[1]:.4f}')
     
-    ax.set_xlabel('Support (Number of Samples)', fontsize=18, fontweight='bold', color='black')
-    ax.set_ylabel('F1-Score', fontsize=18, fontweight='bold', color='black')
-    ax.set_title(f'{method_name}: F1-Score vs Sample Size\n(Correlation Analysis)', 
-                 fontsize=22, fontweight='bold', pad=20, color='black')
+    ax.set_xlabel('Support', fontsize=32, fontweight='bold', color='black')
+    ax.set_ylabel('F1-Score', fontsize=32, fontweight='bold', color='black')
+    ax.set_title(f'{method_name}: F1-Score vs Support\n(Correlation Analysis)', 
+                 fontsize=16, fontweight='bold', pad=20, color='black')
     ax.grid(True, alpha=0.3)
-    ax.tick_params(axis='both', labelsize=14, labelcolor='black')
+    ax.tick_params(axis='both', labelsize=28, labelcolor='0.2')
     for label in ax.get_xticklabels() + ax.get_yticklabels():
         label.set_fontweight('bold')
     ax.legend(fontsize=14)
@@ -236,8 +236,8 @@ def plot_support_vs_f1(df_classes, output_dir, method_name='Dawid-Skene'):
     
     # Add correlation coefficient
     corr = np.corrcoef(support, f1_scores)[0, 1]
-    ax.text(0.02, 0.98, f'Correlation: {corr:.3f}', 
-            transform=ax.transAxes, fontsize=15, fontweight='bold', verticalalignment='top',
+    ax.text(0.6, 0.2, f'Correlation: {corr:.3f}', 
+            transform=ax.transAxes, fontsize=28, fontweight='bold', verticalalignment='top',
             bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.7))
     
     plt.tight_layout()
@@ -249,7 +249,7 @@ def plot_support_vs_f1(df_classes, output_dir, method_name='Dawid-Skene'):
     plt.close()
 
 
-def create_summary_statistics(df_classes, df_full, output_dir, method_name='Dawid-Skene'):
+def create_summary_statistics(df_classes, df_full, output_dir, method_name='AURA'):
     """
     Create a summary statistics table.
     """
@@ -323,9 +323,9 @@ def main():
     print("=" * 100)
     
     # Input file
-    input_file = '../evaluation_results/dawid_skene_classification_report.csv'
-    output_dir = '../evaluation_results/visualizations'
-    method_name = 'Dawid-Skene'
+    input_file = 'evaluation_results/aura_classification_report.csv'
+    output_dir = 'evaluation_results/visualizations'
+    method_name = 'AURA'
     
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
@@ -341,6 +341,9 @@ def main():
     # Generate visualizations
     print(f"\n🎨 Generating visualizations...")
     
+    print(f"\n4. Support vs F1-score scatter plot...")
+    plot_support_vs_f1(df_classes, output_dir, method_name)
+
     print(f"\n1. Per-class metrics (3 metrics bar chart)...")
     plot_per_class_metrics(df_classes, output_dir, method_name)
     
@@ -349,9 +352,6 @@ def main():
     
     print(f"\n3. Metrics heatmap...")
     plot_metrics_heatmap(df_classes, output_dir, method_name)
-    
-    print(f"\n4. Support vs F1-score scatter plot...")
-    plot_support_vs_f1(df_classes, output_dir, method_name)
     
     print(f"\n5. Summary statistics...")
     summary_df = create_summary_statistics(df_classes, df_full, output_dir, method_name)

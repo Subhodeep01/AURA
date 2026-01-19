@@ -2,7 +2,7 @@
 Ablation Study: Impact of Removing Top Classifiers
 
 This script performs an ablation study to analyze how removing top-performing
-classifiers affects the performance of Ensemble (majority voting) vs Dawid-Skene
+classifiers affects the performance of Ensemble (majority voting) vs AURA
 aggregation methods.
 
 The study systematically removes the top classifiers and tests various configurations,
@@ -16,7 +16,7 @@ import os
 import time
 from typing import Dict, List, Tuple
 from collections import Counter
-from dawid_skene import AemL
+from aeml import AemL
 import json
 
 
@@ -109,12 +109,12 @@ def ensemble_predict(predictions: Dict[str, pd.DataFrame],
     return merged['true_label'].values, merged['ensemble_pred'].values, execution_time
 
 
-def dawid_skene_predict(predictions: Dict[str, pd.DataFrame],
+def aeml_predict(predictions: Dict[str, pd.DataFrame],
                        classifier_subset: List[str],
                        ground_truth: pd.DataFrame,
                        all_classes: List[str]) -> Tuple[np.ndarray, np.ndarray, float, Dict[str, float]]:
     """
-    Perform Dawid-Skene aggregation on a subset of classifiers.
+    Perform AURA aggregation on a subset of classifiers.
     
     Args:
         predictions: Dictionary of all predictions
@@ -133,7 +133,7 @@ def dawid_skene_predict(predictions: Dict[str, pd.DataFrame],
         if clf_name in predictions:
             merged = merged.merge(predictions[clf_name], on='video_name', how='inner')
     
-    # Prepare annotations in Dawid-Skene format
+    # Prepare annotations in AURA format
     annotations = {}
     for idx, row in merged.iterrows():
         video_name = row['video_name']
@@ -142,7 +142,7 @@ def dawid_skene_predict(predictions: Dict[str, pd.DataFrame],
             if clf_name in row.index and pd.notna(row[clf_name]):
                 annotations[video_name][clf_name] = row[clf_name]
     
-    # Fit Dawid-Skene model
+    # Fit AURA model
     model = AemL(max_iterations=100, tolerance=1e-6)
     model.fit(annotations, all_classes, classifier_subset)
     
@@ -184,7 +184,7 @@ def run_ablation_study(output_dir: str = 'ablation_results'):
     """
     Run complete ablation study.
     
-    Systematically removes top classifiers and compares Ensemble vs Dawid-Skene.
+    Systematically removes top classifiers and compares Ensemble vs AURA.
     """
     print("=" * 100)
     print("ABLATION STUDY: Impact of Removing Top Classifiers")
@@ -244,9 +244,9 @@ def run_ablation_study(output_dir: str = 'ablation_results'):
     print(f"     Accuracy: {metrics_ens['accuracy']:.4f} | F1: {metrics_ens['f1']:.4f} | "
           f"Precision: {metrics_ens['precision']:.4f} | Recall: {metrics_ens['recall']:.4f}")
     
-    # Dawid-Skene
-    print("  🔹 Dawid-Skene...")
-    y_true_ds, y_pred_ds, ds_time, ds_accuracies = dawid_skene_predict(predictions, active_classifiers, 
+    # AURA
+    print("  🔹 AURA...")
+    y_true_ds, y_pred_ds, ds_time, ds_accuracies = aeml_predict(predictions, active_classifiers, 
                                                 ground_truth, all_classes)
     metrics_ds = calculate_metrics(y_true_ds, y_pred_ds, all_classes)
     print(f"     Accuracy: {metrics_ds['accuracy']:.4f} | F1: {metrics_ds['f1']:.4f} | "
@@ -262,11 +262,11 @@ def run_ablation_study(output_dir: str = 'ablation_results'):
         'Ensemble_Recall': metrics_ens['recall'],
         'Ensemble_F1': metrics_ens['f1'],
         'Ensemble_Time': ens_time,
-        'DS_Accuracy': metrics_ds['accuracy'],
-        'DS_Precision': metrics_ds['precision'],
-        'DS_Recall': metrics_ds['recall'],
-        'DS_F1': metrics_ds['f1'],
-        'DS_Time': ds_time,
+        'AURA_Accuracy': metrics_ds['accuracy'],
+        'AURA_Precision': metrics_ds['precision'],
+        'AURA_Recall': metrics_ds['recall'],
+        'AURA_F1': metrics_ds['f1'],
+        'AURA_Time': ds_time,
         'Accuracy_Diff': metrics_ds['accuracy'] - metrics_ens['accuracy'],
         'F1_Diff': metrics_ds['f1'] - metrics_ens['f1'],
         'Time_Diff': ds_time - ens_time
@@ -301,9 +301,9 @@ def run_ablation_study(output_dir: str = 'ablation_results'):
         print(f"     Accuracy: {metrics_ens['accuracy']:.4f} | F1: {metrics_ens['f1']:.4f} | "
               f"Precision: {metrics_ens['precision']:.4f} | Recall: {metrics_ens['recall']:.4f}")
         
-        # Dawid-Skene
-        print("  🔹 Dawid-Skene...")
-        y_true_ds, y_pred_ds, ds_time, ds_accuracies = dawid_skene_predict(predictions, active_classifiers, 
+        # AURA
+        print("  🔹 AURA...")
+        y_true_ds, y_pred_ds, ds_time, ds_accuracies = aeml_predict(predictions, active_classifiers, 
                                                     ground_truth, all_classes)
         metrics_ds = calculate_metrics(y_true_ds, y_pred_ds, all_classes)
         print(f"     Accuracy: {metrics_ds['accuracy']:.4f} | F1: {metrics_ds['f1']:.4f} | "
@@ -311,11 +311,11 @@ def run_ablation_study(output_dir: str = 'ablation_results'):
         
         # Performance drop from baseline
         baseline_ens_acc = results[0]['Ensemble_Accuracy']
-        baseline_ds_acc = results[0]['DS_Accuracy']
+        baseline_ds_acc = results[0]['AURA_Accuracy']
         
         print(f"\n  📉 Performance drop from baseline:")
         print(f"     Ensemble: {(metrics_ens['accuracy'] - baseline_ens_acc) * 100:+.2f}%")
-        print(f"     Dawid-Skene: {(metrics_ds['accuracy'] - baseline_ds_acc) * 100:+.2f}%")
+        print(f"     AURA: {(metrics_ds['accuracy'] - baseline_ds_acc) * 100:+.2f}%")
         
         results.append({
             'Experiment': f'Remove Top-{exp_num}',
@@ -327,11 +327,11 @@ def run_ablation_study(output_dir: str = 'ablation_results'):
             'Ensemble_Recall': metrics_ens['recall'],
             'Ensemble_F1': metrics_ens['f1'],
             'Ensemble_Time': ens_time,
-            'DS_Accuracy': metrics_ds['accuracy'],
-            'DS_Precision': metrics_ds['precision'],
-            'DS_Recall': metrics_ds['recall'],
-            'DS_F1': metrics_ds['f1'],
-            'DS_Time': ds_time,
+            'AURA_Accuracy': metrics_ds['accuracy'],
+            'AURA_Precision': metrics_ds['precision'],
+            'AURA_Recall': metrics_ds['recall'],
+            'AURA_F1': metrics_ds['f1'],
+            'AURA_Time': ds_time,
             'Accuracy_Diff': metrics_ds['accuracy'] - metrics_ens['accuracy'],
             'F1_Diff': metrics_ds['f1'] - metrics_ens['f1'],
             'Time_Diff': ds_time - ens_time
@@ -361,9 +361,9 @@ def run_ablation_study(output_dir: str = 'ablation_results'):
         print(f"     Accuracy: {metrics_ens['accuracy']:.4f} | F1: {metrics_ens['f1']:.4f} | "
               f"Precision: {metrics_ens['precision']:.4f} | Recall: {metrics_ens['recall']:.4f}")
         
-        # Dawid-Skene
-        print("  🔹 Dawid-Skene...")
-        y_true_ds, y_pred_ds, ds_time, ds_accuracies = dawid_skene_predict(predictions, active_classifiers, 
+        # AURA
+        print("  🔹 AURA...")
+        y_true_ds, y_pred_ds, ds_time, ds_accuracies = aeml_predict(predictions, active_classifiers, 
                                                     ground_truth, all_classes)
         metrics_ds = calculate_metrics(y_true_ds, y_pred_ds, all_classes)
         print(f"     Accuracy: {metrics_ds['accuracy']:.4f} | F1: {metrics_ds['f1']:.4f} | "
@@ -371,11 +371,11 @@ def run_ablation_study(output_dir: str = 'ablation_results'):
         
         # Performance drop from baseline
         baseline_ens_acc = results[0]['Ensemble_Accuracy']
-        baseline_ds_acc = results[0]['DS_Accuracy']
+        baseline_ds_acc = results[0]['AURA_Accuracy']
         
         print(f"\n  📉 Performance drop from baseline:")
         print(f"     Ensemble: {(metrics_ens['accuracy'] - baseline_ens_acc) * 100:+.2f}%")
-        print(f"     Dawid-Skene: {(metrics_ds['accuracy'] - baseline_ds_acc) * 100:+.2f}%")
+        print(f"     AURA: {(metrics_ds['accuracy'] - baseline_ds_acc) * 100:+.2f}%")
         
         results.append({
             'Experiment': f'Remove {removed_classifier}',
@@ -387,11 +387,11 @@ def run_ablation_study(output_dir: str = 'ablation_results'):
             'Ensemble_Recall': metrics_ens['recall'],
             'Ensemble_F1': metrics_ens['f1'],
             'Ensemble_Time': ens_time,
-            'DS_Accuracy': metrics_ds['accuracy'],
-            'DS_Precision': metrics_ds['precision'],
-            'DS_Recall': metrics_ds['recall'],
-            'DS_F1': metrics_ds['f1'],
-            'DS_Time': ds_time,
+            'AURA_Accuracy': metrics_ds['accuracy'],
+            'AURA_Precision': metrics_ds['precision'],
+            'AURA_Recall': metrics_ds['recall'],
+            'AURA_F1': metrics_ds['f1'],
+            'AURA_Time': ds_time,
             'Accuracy_Diff': metrics_ds['accuracy'] - metrics_ens['accuracy'],
             'F1_Diff': metrics_ds['f1'] - metrics_ens['f1'],
             'Time_Diff': ds_time - ens_time
@@ -408,15 +408,15 @@ def run_ablation_study(output_dir: str = 'ablation_results'):
     print("\n📊 Ablation Study Results:")
     print("-" * 100)
     
-    summary_cols = ['Experiment', 'Num_Classifiers', 'Ensemble_Accuracy', 'DS_Accuracy', 
-                   'Accuracy_Diff', 'Ensemble_F1', 'DS_F1', 'F1_Diff']
+    summary_cols = ['Experiment', 'Num_Classifiers', 'Ensemble_Accuracy', 'AURA_Accuracy', 
+                   'Accuracy_Diff', 'Ensemble_F1', 'AURA_F1', 'F1_Diff']
     summary_df = results_df[summary_cols].copy()
     
     # Format for display
     summary_df['Ensemble_Accuracy'] = summary_df['Ensemble_Accuracy'].apply(lambda x: f"{x*100:.2f}%")
-    summary_df['DS_Accuracy'] = summary_df['DS_Accuracy'].apply(lambda x: f"{x*100:.2f}%")
+    summary_df['AURA_Accuracy'] = summary_df['AURA_Accuracy'].apply(lambda x: f"{x*100:.2f}%")
     summary_df['Ensemble_F1'] = summary_df['Ensemble_F1'].apply(lambda x: f"{x*100:.2f}%")
-    summary_df['DS_F1'] = summary_df['DS_F1'].apply(lambda x: f"{x*100:.2f}%")
+    summary_df['AURA_F1'] = summary_df['AURA_F1'].apply(lambda x: f"{x*100:.2f}%")
     summary_df['Accuracy_Diff'] = summary_df['Accuracy_Diff'].apply(lambda x: f"{x*100:+.2f}%")
     summary_df['F1_Diff'] = summary_df['F1_Diff'].apply(lambda x: f"{x*100:+.2f}%")
     
@@ -435,21 +435,21 @@ def run_ablation_study(output_dir: str = 'ablation_results'):
     
     # Which method is more robust?
     baseline_ens_acc = results_df.iloc[0]['Ensemble_Accuracy']
-    baseline_ds_acc = results_df.iloc[0]['DS_Accuracy']
+    baseline_ds_acc = results_df.iloc[0]['AURA_Accuracy']
     
     # Calculate average performance drop for cumulative removal
     cumulative_experiments = results_df[results_df['Experiment'].str.contains('Remove Top-')]
     
     if len(cumulative_experiments) > 0:
         avg_ens_drop = (cumulative_experiments['Ensemble_Accuracy'] - baseline_ens_acc).mean() * 100
-        avg_ds_drop = (cumulative_experiments['DS_Accuracy'] - baseline_ds_acc).mean() * 100
+        avg_ds_drop = (cumulative_experiments['AURA_Accuracy'] - baseline_ds_acc).mean() * 100
         
         print(f"\n1️⃣  Average performance drop (cumulative removal):")
         print(f"   Ensemble: {avg_ens_drop:.2f}%")
-        print(f"   Dawid-Skene: {avg_ds_drop:.2f}%")
+        print(f"   AURA: {avg_ds_drop:.2f}%")
         
         if abs(avg_ds_drop) < abs(avg_ens_drop):
-            print(f"   ✅ Dawid-Skene is more robust ({abs(avg_ens_drop - avg_ds_drop):.2f}% better)")
+            print(f"   ✅ AURA is more robust ({abs(avg_ens_drop - avg_ds_drop):.2f}% better)")
         else:
             print(f"   ✅ Ensemble is more robust ({abs(avg_ds_drop - avg_ens_drop):.2f}% better)")
     
@@ -459,7 +459,7 @@ def run_ablation_study(output_dir: str = 'ablation_results'):
     ties = (results_df['Accuracy_Diff'] == 0).sum()
     
     print(f"\n2️⃣  Head-to-head comparison ({len(results_df)} experiments):")
-    print(f"   Dawid-Skene wins: {ds_wins}")
+    print(f"   AURA wins: {ds_wins}")
     print(f"   Ensemble wins: {ens_wins}")
     print(f"   Ties: {ties}")
     
@@ -472,27 +472,27 @@ def run_ablation_study(output_dir: str = 'ablation_results'):
         for _, row in individual_removals.iterrows():
             removed = row['Removed_Classifier']
             ens_drop = (row['Ensemble_Accuracy'] - baseline_ens_acc) * 100
-            ds_drop = (row['DS_Accuracy'] - baseline_ds_acc) * 100
+            ds_drop = (row['AURA_Accuracy'] - baseline_ds_acc) * 100
             
             print(f"\n   {removed}:")
             print(f"     Ensemble drop: {ens_drop:+.2f}%")
-            print(f"     Dawid-Skene drop: {ds_drop:+.2f}%")
+            print(f"     AURA drop: {ds_drop:+.2f}%")
             
             if abs(ds_drop) < abs(ens_drop):
-                print(f"     → Dawid-Skene handles removal better")
+                print(f"     → AURA handles removal better")
             elif abs(ens_drop) < abs(ds_drop):
                 print(f"     → Ensemble handles removal better")
             else:
                 print(f"     → Equal impact")
     
     # Best configuration
-    best_idx = results_df['DS_Accuracy'].idxmax()
+    best_idx = results_df['AURA_Accuracy'].idxmax()
     best_config = results_df.iloc[best_idx]
     
     print(f"\n4️⃣  Best configuration found:")
     print(f"   Experiment: {best_config['Experiment']}")
     print(f"   Classifiers: {best_config['Active_Classifiers']}")
-    print(f"   Dawid-Skene Accuracy: {best_config['DS_Accuracy']*100:.2f}%")
+    print(f"   AURA Accuracy: {best_config['AURA_Accuracy']*100:.2f}%")
     print(f"   Ensemble Accuracy: {best_config['Ensemble_Accuracy']*100:.2f}%")
     
     print("\n" + "=" * 100)

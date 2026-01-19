@@ -13,7 +13,7 @@ import numpy as np
 
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import BaseMessage, HumanMessage
-from dawid_skene import AemL
+from aeml import AemL
 
 
 @dataclass
@@ -386,7 +386,7 @@ def ensemble_predictions_node(state: GraphState) -> GraphState:
 
 def aeml_node(state: GraphState) -> GraphState:
     print(f"\n{'='*60}")
-    print(f"Dawid-Skene Aggregation")
+    print(f"AURA")
     print(f"{'='*60}")
 
     # Organize results by video: {video_filename: {classifier_name: predicted_class}}
@@ -413,24 +413,24 @@ def aeml_node(state: GraphState) -> GraphState:
     if len(annotations) == 0:
         print("  [WARN] No valid annotations to aggregate!")
         return {
-            "messages": [HumanMessage(content="Dawid-Skene: No valid annotations")]
+            "messages": [HumanMessage(content="AURA: No valid annotations")]
         }
     
     if len(annotator_names) < 2:
-        print(f"  [WARN] Only {len(annotator_names)} annotator(s), Dawid-Skene requires multiple annotators")
+        print(f"  [WARN] Only {len(annotator_names)} annotator(s), AURA requires multiple annotators")
         print("  Falling back to simple prediction selection")
         # Fall back to simple selection
         predictions = {}
         for video_name, video_annotations in annotations.items():
             predictions[video_name] = list(video_annotations.values())[0]
     else:
-        # Use Dawid-Skene algorithm
+        # Use AURA algorithm
         print(f"  Number of videos: {len(annotations)}")
         print(f"  Number of classifiers: {len(annotator_names)}")
         print(f"  Number of classes: {len(state['classes'])}")
         print(f"  Annotators: {', '.join(annotator_names)}")
         
-        # Create and fit Dawid-Skene model
+        # Create and fit AURA model
         model = AemL(max_iterations=100, tolerance=1e-6)
         model.fit(annotations, state["classes"], annotator_names)
         
@@ -446,7 +446,7 @@ def aeml_node(state: GraphState) -> GraphState:
             print(f"    {annotator}: {accuracy:.2%}")
         
         # Save classifier accuracies to separate CSV
-        accuracies_file = "dawid_skene_classifier_accuracies.csv"
+        accuracies_file = "aura_classifier_accuracies.csv"
         with open(accuracies_file, 'w', newline='', encoding='utf-8') as f:
             writer = csv.DictWriter(f, fieldnames=['classifier_name', 'estimated_accuracy'])
             writer.writeheader()
@@ -464,7 +464,7 @@ def aeml_node(state: GraphState) -> GraphState:
         #     model.get_confusion_matrix(names)
     
     # Save predictions to CSV with confidence scores
-    output_file = "dawid_skene_predictions.csv"
+    output_file = "aura_predictions.csv"
     
     with open(output_file, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=['video_name', 'predicted_class', 'confidence'])
@@ -475,7 +475,7 @@ def aeml_node(state: GraphState) -> GraphState:
             
             # Get confidence (probability of predicted class)
             if len(annotator_names) >= 2:
-                # For Dawid-Skene, get the probability of the predicted class
+                # For AURA, get the probability of the predicted class
                 prob_dist = predictions_with_probs[video_name]
                 confidence = prob_dist[predicted_class]
             else:
@@ -488,12 +488,12 @@ def aeml_node(state: GraphState) -> GraphState:
                 'confidence': f"{confidence:.6f}"
             })
     
-    print(f"\n  [OK] Saved Dawid-Skene results to: {output_file}")
+    print(f"\n  [OK] Saved AURA results to: {output_file}")
     print(f"{'='*60}")
     
     return {
         "messages": [HumanMessage(
-            content=f"Dawid-Skene: Aggregated {len(predictions)} predictions using {len(annotator_names)} classifiers"
+            content=f"AURA: Aggregated {len(predictions)} predictions using {len(annotator_names)} classifiers"
         )]
     }
 def create_classification_graph():
@@ -510,7 +510,7 @@ def create_classification_graph():
     workflow.add_node("moondream", classify_with_moondream_node)
     workflow.add_node("qwen", classify_with_qwen_node)
     workflow.add_node("ensemble", ensemble_predictions_node)
-    workflow.add_node("dawid_skene", aeml_node)
+    workflow.add_node("aura", aeml_node)
     
     # Define edges for PARALLEL execution
     workflow.set_entry_point("load_videos")
@@ -533,17 +533,17 @@ def create_classification_graph():
     workflow.add_edge("moondream", "ensemble")
     workflow.add_edge("qwen", "ensemble")
     
-    workflow.add_edge("gemini", "dawid_skene")
-    workflow.add_edge("twelvelabs", "dawid_skene")
-    workflow.add_edge("gpt4o", "dawid_skene")
-    workflow.add_edge("gpt5mini", "dawid_skene")
-    workflow.add_edge("replicate", "dawid_skene")
-    workflow.add_edge("moondream", "dawid_skene")
-    workflow.add_edge("qwen", "dawid_skene")
+    workflow.add_edge("gemini", "aura")
+    workflow.add_edge("twelvelabs", "aura")
+    workflow.add_edge("gpt4o", "aura")
+    workflow.add_edge("gpt5mini", "aura")
+    workflow.add_edge("replicate", "aura")
+    workflow.add_edge("moondream", "aura")
+    workflow.add_edge("qwen", "aura")
     
     # Both ensemble nodes end independently
     workflow.add_edge("ensemble", END)
-    workflow.add_edge("dawid_skene", END)
+    workflow.add_edge("aura", END)
     
     return workflow.compile()
 
@@ -627,5 +627,5 @@ if __name__ == "__main__":
     print("\n[OK] Classification complete!")
     print(f"Ensemble results saved to:")
     print(f"  - ensemble_predictions.csv (majority voting)")
-    print(f"  - dawid_skene_predictions.csv (Dawid-Skene algorithm - add your implementation)")
+    print(f"  - aura_predictions.csv (AURA algorithm - add your implementation)")
 

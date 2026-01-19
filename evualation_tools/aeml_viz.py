@@ -1,11 +1,3 @@
-"""
-Dawid-Skene Visualization Script
-
-This script generates:
-1. Annotator accuracy heatmaps for each classifier (final iteration)
-2. Label convergence tracking across all iterations (CSV)
-3. Confusion matrix visualizations for each annotator
-"""
 
 import pandas as pd
 import numpy as np
@@ -13,11 +5,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 from typing import Dict, List, Tuple
-from dawid_skene import AemL
+# from aeml import AemL
+from aeml import AemL
 
 
-class DawidSkeneVisualizer(AemL):
-    """Extended Dawid-Skene class that tracks convergence history."""
+class AEMLVisualizer(AemL):
+    """Extended AURA class that tracks convergence history."""
     
     def __init__(self, max_iterations=100, tolerance=1e-6):
         super().__init__(max_iterations, tolerance)
@@ -121,7 +114,7 @@ def load_data():
 
 
 def prepare_annotations(ground_truth, predictions, classifier_subset):
-    """Prepare annotations in Dawid-Skene format."""
+    """Prepare annotations in AURA format."""
     # Merge all predictions
     merged = ground_truth.copy()
     for clf_name in classifier_subset:
@@ -266,7 +259,7 @@ def plot_convergence_metrics(log_likelihood_history, convergence_history,
     ax1.plot(iterations, log_likelihood_history, 'b-', linewidth=2, marker='o')
     ax1.set_xlabel('Iteration', fontsize=18, fontweight='bold', color='black')
     ax1.set_ylabel('Log-Likelihood', fontsize=18, fontweight='bold', color='black')
-    ax1.set_title('Dawid-Skene Convergence: Log-Likelihood', fontsize=22, fontweight='bold', color='black')
+    ax1.set_title('AURA Convergence: Log-Likelihood', fontsize=22, fontweight='bold', color='black')
     ax1.tick_params(axis='both', labelsize=14, labelcolor='black')
     for label in ax1.get_xticklabels() + ax1.get_yticklabels():
         label.set_fontweight('bold')
@@ -276,7 +269,7 @@ def plot_convergence_metrics(log_likelihood_history, convergence_history,
     ax2.plot(iterations, accuracies, 'g-', linewidth=2, marker='s')
     ax2.set_xlabel('Iteration', fontsize=18, fontweight='bold', color='black')
     ax2.set_ylabel('Accuracy', fontsize=18, fontweight='bold', color='black')
-    ax2.set_title('Dawid-Skene Convergence: Accuracy', fontsize=22, fontweight='bold', color='black')
+    ax2.set_title('AURA Convergence: Accuracy', fontsize=22, fontweight='bold', color='black')
     ax2.set_ylim(0, 1.0)
     ax2.tick_params(axis='both', labelsize=14, labelcolor='black')
     for label in ax2.get_xticklabels() + ax2.get_yticklabels():
@@ -350,7 +343,7 @@ def run_visualization_analysis(classifier_subset=None):
         classifier_subset: List of classifiers to include (None = all)
     """
     print("=" * 100)
-    print("DAWID-SKENE VISUALIZATION ANALYSIS")
+    print("AURA VISUALIZATION ANALYSIS")
     print("=" * 100)
     
     # Load data
@@ -370,13 +363,13 @@ def run_visualization_analysis(classifier_subset=None):
     print(f"   ✓ Prepared annotations for {len(annotations)} videos")
     
     # Create output directory
-    output_dir = 'dawid_skene_visualizations'
+    output_dir = 'AURA_visualizations'
     os.makedirs(output_dir, exist_ok=True)
     print(f"\n📁 Output directory: {output_dir}/")
     
-    # Fit Dawid-Skene with tracking
-    print("\n🔹 Fitting Dawid-Skene model with convergence tracking...")
-    model = DawidSkeneVisualizer(max_iterations=100, tolerance=1e-6)
+    # Fit AURA with tracking
+    print("\n🔹 Fitting AURA model with convergence tracking...")
+    model = AEMLVisualizer(max_iterations=100, tolerance=1e-6)
     model.fit(annotations, all_classes, classifier_subset)
     
     print(f"\n✓ Model converged in {len(model.convergence_history)} iterations")
@@ -469,4 +462,4 @@ if __name__ == "__main__":
     print("\n🚀 Running visualization analysis with ALL classifiers...")
     model, convergence_df, changes_df = run_visualization_analysis()
     
-    print("\n✨ Analysis complete! Check the 'dawid_skene_visualizations' directory for outputs.")
+    print("\n✨ Analysis complete! Check the 'AURA_visualizations' directory for outputs.")

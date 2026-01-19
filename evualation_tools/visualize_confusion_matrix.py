@@ -21,7 +21,7 @@ def load_confusion_matrix(filepath):
     return cm_df
 
 
-def plot_confusion_matrix_heatmap(cm_df, output_dir, method_name='Dawid-Skene'):
+def plot_confusion_matrix_heatmap(cm_df, output_dir, method_name='AURA'):
     """
     Create full confusion matrix heatmap.
     """
@@ -59,7 +59,7 @@ def plot_confusion_matrix_heatmap(cm_df, output_dir, method_name='Dawid-Skene'):
     plt.close()
 
 
-def plot_normalized_confusion_matrix(cm_df, output_dir, method_name='Dawid-Skene'):
+def plot_normalized_confusion_matrix(cm_df, output_dir, method_name='AURA'):
     """
     Create normalized confusion matrix (row-wise).
     Shows percentage of predictions for each true class.
@@ -103,7 +103,7 @@ def plot_normalized_confusion_matrix(cm_df, output_dir, method_name='Dawid-Skene
     plt.close()
 
 
-def plot_per_class_accuracy_from_cm(cm_df, output_dir, method_name='Dawid-Skene'):
+def plot_per_class_accuracy_from_cm(cm_df, output_dir, method_name='AURA'):
     """
     Plot per-class accuracy from confusion matrix diagonal.
     """
@@ -189,7 +189,7 @@ def plot_per_class_accuracy_from_cm(cm_df, output_dir, method_name='Dawid-Skene'
     }).sort_values('Accuracy', ascending=False)
 
 
-def analyze_confusion_pairs(cm_df, output_dir, method_name='Dawid-Skene', top_n=20):
+def analyze_confusion_pairs(cm_df, output_dir, method_name='AURA', top_n=20):
     """
     Analyze and visualize the most confused class pairs.
     """
@@ -255,7 +255,7 @@ def analyze_confusion_pairs(cm_df, output_dir, method_name='Dawid-Skene', top_n=
     return confusion_df
 
 
-def create_accuracy_summary(cm_df, accuracy_df, output_dir, method_name='Dawid-Skene'):
+def create_accuracy_summary(cm_df, accuracy_df, output_dir, method_name='AURA'):
     """
     Create summary statistics from confusion matrix.
     """
@@ -326,7 +326,7 @@ def create_accuracy_summary(cm_df, accuracy_df, output_dir, method_name='Dawid-S
     return summary_df
 
 
-def plot_class_distribution(cm_df, output_dir, method_name='Dawid-Skene'):
+def plot_class_distribution(cm_df, output_dir, method_name='AURA'):
     """
     Plot the distribution of samples per class.
     """
@@ -371,9 +371,9 @@ def main():
     print("=" * 100)
     
     # Input file
-    input_file = '../evaluation_results/dawid_skene_confusion_matrix.csv'
+    input_file = '../evaluation_results/AURA_confusion_matrix.csv'
     output_dir = '../evaluation_results/visualizations'
-    method_name = 'Dawid-Skene'
+    method_name = 'AURA'
     
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
